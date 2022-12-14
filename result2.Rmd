@@ -115,3 +115,169 @@ titanic_full$Family_size_FE <- titanic_full$SibSp + titanic_full$Parch + 1
 
 titanic_full$Total_group_size_FE <- pmax(titanic_full$Family_size_FE, titanic_full$Group_size_FE)
 ```
+
+## **3.2 Missing Value**
+From here, I have addressed the variables with missing values. I know that there were missing values in __Age__, and __Fare_pp_FE__. I also know that __Embarked__ has a blank entry.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+missing_vars <- function(x) {
+  var <- 0
+  missing <- 0
+  missing_prop <- 0
+  for (i in 1:length(names(x))) {
+    var[i] <- names(x)[i]
+    missing[i] <- sum(is.na(x[, i]))
+    missing_prop[i] <- missing[i] / nrow(x)
+  }
+  (missing_data <- data.frame(var = var, missing = missing, missing_prop = missing_prop) %>% 
+      arrange(desc(missing_prop)))
+}
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full <- titanic_full %>%
+  select(-c(Name, Ticket, Cabin, Group_size_FE, Fare))
+
+missing_vars(titanic_full)
+```
+### **3.2.1 Fare**
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full[is.na(titanic_full$Fare_pp_FE), ]
+```
+There was only one missing value. Since there was one missing value, the median value was assigned instead of taking a special imputation method to save time.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Fare_pp_FE[is.na(titanic_full$Fare_pp_FE)] <- median(titanic_full$Fare_pp_FE, na.rm = T)
+```
+
+### **3.2.2 Embarked**
+I can see that there are two missing calues in the __Embarked__. Most passengers are classified as "S". However, they are classified as "C" because their ticket price is high and it is possible that the wealthier passengers are from "C".
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+which(titanic_full$Embarked == "")
+titanic_full[c(480, 1248), ]
+```
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Embarked[c(480, 1248)] <- "C"
+table(titanic_full$Embarked)
+```
+
+### **3.2.3 Age**
+The missing calues for __Age__ have been found to be about 20% of the total. Therefore, it is reasonable to use the imputation method to deal with missing values. Here, the missing values were assigned by random forest.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Nominal factors
+titanic_full_nominal <- c('Survived', 'Sex', 'Embarked', 'Title', 'Cabin_dat')
+titanic_full[titanic_full_nominal]<-lapply(titanic_full[titanic_full_nominal], function(x){factor(x)})
+
+# Ordinal factors
+titanic_full$Pclass <- factor(titanic_full$Pclass,
+                              ordered = TRUE,
+                              levels = c(3,2,1),
+                              labels = c("Third", "Second", "First"))
+
+# Tidying
+titanic_full$Total_group_size_FE <- as.integer(titanic_full$Total_group_size_FE)
+titanic_full$Test_Data <- as.integer(titanic_full$Test_Data)
+titanic_full$Fare_pp_FE <- round(titanic_full$Fare_pp_FE, 2)
+
+glimpse(titanic_full)
+```
+I used 5-fold cross validation with different mtry values.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+age_train <- titanic_full %>%
+  filter(!is.na(Age))
+
+set.seed(2307)
+
+repeatedCV <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+
+rf_age_grid <- expand.grid(mtry = c(2, 3, 4))
+
+rf_age <- train(x = age_train %>% select(c(Pclass, Sex, SibSp, Parch, Embarked, Title, Cabin_dat, Fare_pp_FE, Total_group_size_FE)),
+                     y = age_train$Age,
+                     method = "rf", 
+                     trControl = repeatedCV, 
+                     importance = TRUE, 
+                     tuneGrid = rf_age_grid)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_age
+```
+We can see that the RMSE is the smallest value when mtry = 2.Thus, we see that we are predicting with a random forest of mtry=2.　Looking at the impact on variable predictions, it is clear that the __Title__ has a significant impact.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+varImp(rf_age)
+```
+Using this prediction formula, the missing value of __Age__ is sbstituted. For those with missing age, we put the predicted value, and for those without missing age, we set the original value.' Master' and older than 13 years old were set to 13 years old.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+age_predictions <- predict(rf_age, titanic_full)
+
+# joining back onto data frame
+
+titanic_full <- as_tibble(cbind(titanic_full, age_predictions))
+
+titanic_full$Age_IMP <- ifelse(!is.na(titanic_full$Age), 
+                               titanic_full$Age, 
+                               titanic_full$age_predictions)
+
+titanic_full <- titanic_full %>%
+  select(-c(Age, SibSp, Parch, age_predictions))
+
+titanic_full$Age_IMP <- ifelse(titanic_full$Title == 'Master' & titanic_full$Age_IMP > 13,
+                               13, 
+                               titanic_full$Age_IMP) 
+```
+
+### 3.2.4. Child
+Since it is presumed that younger people have a higher survival rate, a variable was set up to define children as those under 15 years of age.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$IsChild_FE <- factor(ifelse(titanic_full$Age_IMP < 15, 1, 0))
+```
+
+
+# ** Building and Tuning the Final Model
+I have divided the full model again into test and training data. The training data is used to create a predictive model to predict the survival of the test data.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_test <- as_tibble(titanic_full) %>%
+  filter(Test_Data == 0)
+```
+
+## **Model 2: Removing the least useful variables:**
+Next, I created a prediction model without __Cabin_dat__ and __IsChild_FE__, which were considered not very useful for prediction in the previous analysis. I have created a predictive model with a random forest as well. We found that Accuracy was highest at mtry=2.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_train_2 <- titanic_full %>%
+  filter(Test_Data == 1) %>%
+  select(c(Survived, Pclass, Sex, Embarked, Title, Fare_pp_FE, Total_group_size_FE, Age_IMP))
+```
+
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+set.seed(2307)
+
+repeatedCV <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+
+rf_grid <- expand.grid(mtry = seq(from = 2, to = ncol(rf_train_2) - 1, by = 1))
+
+rf_model_2 <- train(x = rf_train_2[ ,-1],
+                    y = rf_train_2$Survived,
+                    method = "rf", 
+                    trControl = repeatedCV, 
+                    importance = TRUE, 
+                    tuneGrid = rf_grid)
+
+rf_model_2
+```
+
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+varImp(rf_model_2)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+paste("The maximum accuracy was", round(max(rf_model_2$results$Accuracy), 5))
+```
+The results show that model2 has slightly higher Accuracy. I determined this to be the final model.
+
+## **Conclusion**
+I was able to obtain high Accuracy with the Random Forest model using __Title__, __Sex__, __Fare__pp__FE__, __Total_group_size_FE__, __Pclass__, __Age_IMP__, __Embarked__. If I have time in the future, I would like to create a support vector machine and XGboost model, which I plan to study in the spring semester or later.

@@ -260,7 +260,14 @@ $(document).ready(function () {
   <a href="result.html">
     <span class="fa fa-file-pdf-o"></span>
      
-    Result &amp; Conclusion
+    Result1
+  </a>
+</li>
+<li>
+  <a href="result2.html">
+    <span class="fa fa-file-pdf-o"></span>
+     
+    Result2
   </a>
 </li>
       </ul>
@@ -370,6 +377,184 @@ There are correlation between Group size and Pclass. ###
 the larger the family size, the higher the survival rate. Thus, I
 created a family size variable.</p>
 </div>
+</div>
+<div id="missing-value" class="section level2">
+<h2><strong>3.2 Missing Value</strong></h2>
+<p>From here, I have addressed the variables with missing values. I know
+that there were missing values in <strong>Age</strong>, and
+<strong>Fare_pp_FE</strong>. I also know that <strong>Embarked</strong>
+has a blank entry.</p>
+<pre><code>##                    var missing missing_prop
+## 1             Survived     418 0.3193277311
+## 2                  Age     263 0.2009167303
+## 3           Fare_pp_FE       1 0.0007639419
+## 4          PassengerId       0 0.0000000000
+## 5               Pclass       0 0.0000000000
+## 6                  Sex       0 0.0000000000
+## 7                SibSp       0 0.0000000000
+## 8                Parch       0 0.0000000000
+## 9             Embarked       0 0.0000000000
+## 10           Test_Data       0 0.0000000000
+## 11               Title       0 0.0000000000
+## 12             Surname       0 0.0000000000
+## 13           Cabin_dat       0 0.0000000000
+## 14      Family_size_FE       0 0.0000000000
+## 15 Total_group_size_FE       0 0.0000000000</code></pre>
+<div id="fare" class="section level3">
+<h3><strong>3.2.1 Fare</strong></h3>
+<pre><code>##     PassengerId Pclass  Sex  Age SibSp Parch Embarked Test_Data Survived Title
+## 153        1044      3 male 60.5     0     0        S         0       NA    Mr
+##     Surname Cabin_dat Fare_pp_FE Family_size_FE Total_group_size_FE
+## 153  Storey         0         NA              1                   1</code></pre>
+<p>There was only one missing value. Since there was one missing value,
+the median value was assigned instead of taking a special imputation
+method to save time.</p>
+</div>
+<div id="embarked" class="section level3">
+<h3><strong>3.2.2 Embarked</strong></h3>
+<p>I can see that there are two missing calues in the
+<strong>Embarked</strong>. Most passengers are classified as “S”.
+However, they are classified as “C” because their ticket price is high
+and it is possible that the wealthier passengers are from “C”.</p>
+<pre><code>## [1]  480 1248</code></pre>
+<pre><code>##      PassengerId Pclass    Sex Age SibSp Parch Embarked Test_Data Survived
+## 480           62      1 female  38     0     0                  1        1
+## 1248         830      1 female  62     0     0                  1        1
+##      Title Surname Cabin_dat Fare_pp_FE Family_size_FE Total_group_size_FE
+## 480   Miss   Icard         1         40              1                   2
+## 1248   Mrs   Stone         1         40              1                   2</code></pre>
+<pre><code>## 
+##   C   Q   S 
+## 272 123 914</code></pre>
+</div>
+<div id="age" class="section level3">
+<h3><strong>3.2.3 Age</strong></h3>
+<p>The missing calues for <strong>Age</strong> have been found to be
+about 20% of the total. Therefore, it is reasonable to use the
+imputation method to deal with missing values. Here, the missing values
+were assigned by random forest.</p>
+<pre><code>## Rows: 1,309
+## Columns: 15
+## $ PassengerId         &lt;int&gt; 892, 893, 894, 895, 896, 897, 898, 899, 900, 901, …
+## $ Pclass              &lt;ord&gt; Third, Third, Second, Third, Third, Third, Third, …
+## $ Sex                 &lt;fct&gt; male, female, male, male, female, male, female, ma…
+## $ Age                 &lt;dbl&gt; 34.5, 47.0, 62.0, 27.0, 22.0, 14.0, 30.0, 26.0, 18…
+## $ SibSp               &lt;int&gt; 0, 1, 0, 0, 1, 0, 0, 1, 0, 2, 0, 0, 1, 1, 1, 1, 0,…
+## $ Parch               &lt;int&gt; 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+## $ Embarked            &lt;fct&gt; Q, S, Q, S, S, S, Q, S, C, S, S, S, S, S, S, C, Q,…
+## $ Test_Data           &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+## $ Survived            &lt;fct&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+## $ Title               &lt;fct&gt; Mr, Mrs, Mr, Mr, Mrs, Mr, Miss, Mr, Mrs, Mr, Mr, M…
+## $ Surname             &lt;chr&gt; &quot;Kelly&quot;, &quot;Wilkes&quot;, &quot;Myles&quot;, &quot;Wirz&quot;, &quot;Hirvonen&quot;, &quot;S…
+## $ Cabin_dat           &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0,…
+## $ Fare_pp_FE          &lt;dbl&gt; 7.83, 7.00, 9.69, 8.66, 6.14, 9.22, 7.63, 9.67, 7.…
+## $ Family_size_FE      &lt;dbl&gt; 1, 2, 1, 1, 3, 1, 1, 3, 1, 3, 1, 1, 2, 2, 2, 2, 1,…
+## $ Total_group_size_FE &lt;int&gt; 1, 2, 1, 1, 3, 1, 1, 3, 1, 3, 1, 1, 2, 2, 2, 2, 1,…</code></pre>
+<p>I used 5-fold cross validation with different mtry values.</p>
+<pre><code>## Random Forest 
+## 
+## 1046 samples
+##    9 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold, repeated 5 times) 
+## Summary of sample sizes: 837, 837, 837, 836, 837, 837, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  RMSE      Rsquared   MAE     
+##   2     10.51618  0.4684004  8.093269
+##   3     10.57352  0.4610362  8.081742
+##   4     10.66986  0.4531266  8.133477
+## 
+## RMSE was used to select the optimal model using the smallest value.
+## The final value used for the model was mtry = 2.</code></pre>
+<p>We can see that the RMSE is the smallest value when mtry = 2.Thus, we
+see that we are predicting with a random forest of mtry=2.　Looking at
+the impact on variable predictions, it is clear that the
+<strong>Title</strong> has a significant impact.</p>
+<pre><code>## rf variable importance
+## 
+##                     Overall
+## Title               100.000
+## Fare_pp_FE           63.544
+## Parch                53.242
+## Pclass               39.914
+## Total_group_size_FE  35.331
+## SibSp                26.641
+## Sex                   6.987
+## Cabin_dat             2.805
+## Embarked              0.000</code></pre>
+<p>Using this prediction formula, the missing value of
+<strong>Age</strong> is sbstituted. For those with missing age, we put
+the predicted value, and for those without missing age, we set the
+original value.’ Master’ and older than 13 years old were set to 13
+years old.</p>
+</div>
+<div id="child" class="section level3">
+<h3>3.2.4. Child</h3>
+<p>Since it is presumed that younger people have a higher survival rate,
+a variable was set up to define children as those under 15 years of
+age.</p>
+</div>
+</div>
+</div>
+<div id="building-and-tuning-the-final-model" class="section level1">
+<h1>** Building and Tuning the Final Model</h1>
+<p>I have divided the full model again into test and training data. The
+training data is used to create a predictive model to predict the
+survival of the test data.</p>
+<div id="model-2-removing-the-least-useful-variables"
+class="section level2">
+<h2><strong>Model 2: Removing the least useful variables:</strong></h2>
+<p>Next, I created a prediction model without <strong>Cabin_dat</strong>
+and <strong>IsChild_FE</strong>, which were considered not very useful
+for prediction in the previous analysis. I have created a predictive
+model with a random forest as well. We found that Accuracy was highest
+at mtry=2.</p>
+<pre><code>## Random Forest 
+## 
+## 891 samples
+##   7 predictor
+##   2 classes: &#39;0&#39;, &#39;1&#39; 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold, repeated 5 times) 
+## Summary of sample sizes: 713, 712, 713, 713, 713, 713, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##   2     0.8332112  0.6372489
+##   3     0.8287356  0.6301512
+##   4     0.8157295  0.6043597
+##   5     0.8090005  0.5916637
+##   6     0.8098981  0.5937709
+##   7     0.8056284  0.5852647
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was mtry = 2.</code></pre>
+<pre><code>## rf variable importance
+## 
+##                     Importance
+## Title                   100.00
+## Sex                      97.40
+## Fare_pp_FE               88.22
+## Total_group_size_FE      82.45
+## Pclass                   79.88
+## Age_IMP                  58.96
+## Embarked                  0.00</code></pre>
+<pre><code>## [1] &quot;The maximum accuracy was 0.83321&quot;</code></pre>
+<p>The results show that model2 has slightly higher Accuracy. I
+determined this to be the final model.</p>
+</div>
+<div id="conclusion" class="section level2">
+<h2><strong>Conclusion</strong></h2>
+<p>I was able to obtain high Accuracy with the Random Forest model using
+<strong>Title</strong>, <strong>Sex</strong>,
+__Fare__pp<strong>FE</strong>, <strong>Total_group_size_FE</strong>,
+<strong>Pclass</strong>, <strong>Age_IMP</strong>,
+<strong>Embarked</strong>. If I have time in the future, I would like to
+create a support vector machine and XGboost model, which I plan to study
+in the spring semester or later.</p>
 </div>
 </div>
 
