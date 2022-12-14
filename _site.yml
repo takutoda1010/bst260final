@@ -1,9 +1,16 @@
-name: "my-website"
+name: "Takuto Yoshida"
 output_dir: "."
 navbar:
-  title: "My Website"
+  title: "Predictions of Titanic Survivors"
   left:
     - text: "Home"
       href: Index.html
-    - text: "Tab 1"
-      href: tabs/tab1.html
+    - text: "Introduction"
+      icon: fa-user 
+      href: intro.html
+    - text: "Result1"
+      icon: fa-file-pdf-o
+      href: result.html
+    - text: "Result2"
+      icon: fa-file-pdf-o
+      href: result2.html

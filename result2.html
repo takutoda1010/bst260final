@@ -9,9 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Takuto Yoshida" />
 
+<meta name="date" content="2022-12-14" />
 
-<title>BST260 Final Project</title>
+<title>result2</title>
 
 <script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -258,14 +260,7 @@ $(document).ready(function () {
   <a href="result.html">
     <span class="fa fa-file-pdf-o"></span>
      
-    Result1
-  </a>
-</li>
-<li>
-  <a href="result2.html">
-    <span class="fa fa-file-pdf-o"></span>
-     
-    Result2
+    Result &amp; Conclusion
   </a>
 </li>
       </ul>
@@ -280,18 +275,100 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">BST260 Final Project</h1>
+<h1 class="title toc-ignore">result2</h1>
+<h4 class="author">Takuto Yoshida</h4>
+<h4 class="date">2022-12-14</h4>
 
 </div>
 
 
-<div id="dec-14-2022" class="section level1">
-<h1>Dec 14, 2022</h1>
-<div id="bst260" class="section level2">
-<h2>BST260</h2>
-<div id="final-project" class="section level3">
-<h3>Final Project</h3>
-<p>This is my final project!</p>
+<div id="feature-engineering-missing-value-imputation"
+class="section level1">
+<h1><strong>3. Feature Engineering $ Missing Value
+Imputation</strong></h1>
+<div id="feature-engineering" class="section level2">
+<h2><strong>3.1 Feature Engineering</strong></h2>
+<div id="title" class="section level3">
+<h3><strong>3.1.1 Title</strong></h3>
+<p>From the evaluation of the variables so far, I have found that
+survival rates are higher for economically well-off individuals and for
+women. Thus, it is possible that survival rates can be predicted from
+name titles. I subtracted the Title from <em>Name</em> by using regular
+expression.</p>
+<pre><code>##               
+##                  0   1
+##   Capt           1   0
+##   Col            1   1
+##   Don            1   0
+##   Dona           0   0
+##   Dr             4   3
+##   Jonkheer       1   0
+##   Lady           0   1
+##   Major          1   1
+##   Master        17  23
+##   Miss          55 127
+##   Mlle           0   2
+##   Mme            0   1
+##   Mr           436  81
+##   Mrs           26  99
+##   Ms             0   1
+##   Rev            6   0
+##   Sir            0   1
+##   the Countess   0   1</code></pre>
+<pre><code>##         
+##          Capt Col Don Dona  Dr Jonkheer Lady Major Master Miss Mlle Mme  Mr Mrs
+##   female    0   0   0    1   1        0    1     0      0  260    2   1   0 197
+##   male      1   4   1    0   7        1    0     2     61    0    0   0 757   0
+##         
+##           Ms Rev Sir the Countess
+##   female   2   0   0            1
+##   male     0   8   1            0</code></pre>
+<pre><code>##               
+##                        0         1
+##   Capt         1.0000000 0.0000000
+##   Col          0.5000000 0.5000000
+##   Don          1.0000000 0.0000000
+##   Dona                            
+##   Dr           0.5714286 0.4285714
+##   Jonkheer     1.0000000 0.0000000
+##   Lady         0.0000000 1.0000000
+##   Major        0.5000000 0.5000000
+##   Master       0.4250000 0.5750000
+##   Miss         0.3021978 0.6978022
+##   Mlle         0.0000000 1.0000000
+##   Mme          0.0000000 1.0000000
+##   Mr           0.8433269 0.1566731
+##   Mrs          0.2080000 0.7920000
+##   Ms           0.0000000 1.0000000
+##   Rev          1.0000000 0.0000000
+##   Sir          0.0000000 1.0000000
+##   the Countess 0.0000000 1.0000000</code></pre>
+<p><img src="result2_files/figure-html/unnamed-chunk-4-1.png" width="672" />
+There are several few titles. We have summarized and categorized them
+into groups of six titles.</p>
+<p><img src="result2_files/figure-html/unnamed-chunk-6-1.png" width="672" />
+It can be seen that the mortality rate is very high for those with the
+title “Mr.”.</p>
+</div>
+<div id="cabin-data" class="section level3">
+<h3><strong>3.1.2 Cabin data</strong></h3>
+<p>Many part of cabin data was missing. Since assigning missing values
+would place a very strong presumption, I made it a binary variable with
+and without data.</p>
+<pre><code>## 
+##         0         1 
+## 0.7746371 0.2253629</code></pre>
+</div>
+<div id="fare-per-person" class="section level3">
+<h3><strong>3.1.3 Fare (per person)</strong></h3>
+<p>We created the per capita fare cost as a variable because it is
+possible that more affluent people purchase more expensive tickets and
+have higher survival rates.</p>
+<p><img src="result2_files/figure-html/unnamed-chunk-10-1.png" width="672" />
+There are correlation between Group size and Pclass. ###
+<strong>3.1.4</strong> Based on previous studies, it is possible that
+the larger the family size, the higher the survival rate. Thus, I
+created a family size variable.</p>
 </div>
 </div>
 </div>

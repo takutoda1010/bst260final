@@ -1,0 +1,208 @@
+---
+title: "result"
+author: "Takuto Yoshida"
+date: "2022-12-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Results**
+### **Importing, Combining, Data Overview**
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Make the following libraries available
+library('readr') 
+library('dplyr') 
+library('ggplot2') 
+library('gridExtra')
+library('caret') 
+library('randomForest')
+library('glmnet')
+library('kernlab')
+library('tidyverse')
+library('stringr')
+library('corrplot')
+library('scales')
+library('ggthemes')
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Importing the dataset
+theme_set(theme_light())
+setwd("/Users/yoshidatakuto/Dropbox/HSPH/MPH-CLE/BST260/titanic (1)")
+train_titanic <- read.csv("test.csv", stringsAsFactors = F) %>% mutate(Test_Data = 0)
+test_titanic <- read.csv("train.csv", stringsAsFactors = F) %>% mutate(Test_Data = 1)
+titanic_full <- bind_rows(train_titanic, test_titanic) 
+```
+
+Combined into one full data set. Referring to the data set, it can be seen that there are missing values in __Age__ and __Fare__,and __Survived__ have the missing value. I define the function *missing_var*, which I can use to get an overview of what proportion of each variable is missing, and re-use it later if I need to. 
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# full model
+str(titanic_full)
+summary(titanic_full)　
+```
+## **Exploring existing variables**
+
+### **PassengerId**
+This is the passenger's ID. The number 1 - 891 is train data and 892 - 1309 is test data.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+str(titanic_full$PassengerId)
+```
+
+### **Pclass**
+Many tickets were Pclass=3, and Pclass=3 passengers were found to have lower survivability.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+theme_set(theme_light())
+
+prop.table(table(titanic_full$Pclass))
+prop.table(table(titanic_full$Pclass, titanic_full$Survived), 1)
+
+ggplot(titanic_full[1:891,],aes(x = Pclass,fill= factor(Survived))) +
+  geom_bar(stat='count',position='dodge') 
+```
+
+### **Name**
+There were two people with the same name. The data shows that they were different people.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+length(unique(titanic_full$Name)) < nrow(titanic_full)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  filter(Name == "Connolly, Miss. Kate" | Name == "Kelly, Mr. James") %>%
+  select(PassengerId, Survived, Name, Age, Ticket)
+```
+### **Sex**
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+prop.table(table(titanic_full$Sex))
+```
+
+### **Age**
+Younger age passengers show higher survival rates. Age has quite a problem with missing value. I will deal with this problem later.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Visualization of Age and survivability using linear regression and scatter plots
+ggplot(titanic_full[1:891,],aes(x=Age, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge') 
+```
+
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full, aes(x=titanic_full$Age, y=titanic_full$Survived)) +
+  geom_point() +
+  geom_smooth(method = lm, se=TRUE)
+```
+
+
+### **SibSp**
+The number of siblings/spouse aboard the titanic. The mortality rate is higher for those with fewer siblings and spouses.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+table(titanic_full$SibSp, titanic_full$Survived)
+prop.table(table(titanic_full$SibSp, titanic_full$Survived), 1)
+ggplot(titanic_full[1:891,],aes(x=SibSp, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge')
+```
+### **Parch**
+The number of parents/children aboard the titanic. The mortality rate is higher when the number of parents and children is smaller. Base on the visualization of SibSp and Parch, the family size seems to be related to the survive. Therefore, I create the new variable to indicate the family size.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+table(titanic_full$Parch, titanic_full$Survived)
+prop.table(table(titanic_full$Parch, titanic_full$Survived))
+ggplot(titanic_full[1:891,],aes(x=Parch, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge')
+```
+
+Passengers with more family members are expected to have higher survival rates, so a new variable was created to indicate the number of family members.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# The number of family member 
+titanic_full$Fsize <- titanic_full$SibSp + titanic_full$Parch +1
+table(titanic_full$Fsize, titanic_full$Survived)
+prop.table(table(titanic_full$Fsize, titanic_full$Survived))
+ggplot(titanic_full[1:891,],aes(x=Fsize, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge')
+```
+
+### **Ticket**
+This is the Ticket number. Several passengers are fond to have the same ticket number, This could mean that family members or others who rode together may have shared tickets.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+length(unique(titanic_full$Ticket))
+```
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  group_by(Ticket) %>%
+  count() %>%
+  arrange(desc(n))
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  group_by(Ticket, Fare) %>%
+  count() %>%
+  arrange(desc(n))
+```
+People with the same ticket have the same fare except the number 7534. 
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  filter(Ticket == '7534')
+```
+
+
+### **Fare**
+This is the passenger's fare. This shows a very right-skewed data and there is one outliers at >500.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full, aes(x = 1, y = Fare)) + 
+  geom_boxplot() + 
+  theme(axis.ticks.y = element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.title.y=element_blank()) + 
+  scale_y_continuous(breaks = seq(0, 600, 50)) + 
+  coord_flip() + 
+  ggtitle("Full Dataset - Fare")
+```
+After excluding outliers, the relationship between fares and survival rates was examined and found that those who purchased more expensive tickets had higher survival rates.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full, aes(x = 1, y = Fare)) + 
+  geom_boxplot() + 
+  theme(axis.ticks.y = element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.title.y=element_blank()) + 
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 50)) + 
+  facet_grid(Survived ~ ., labeller = label_both) + 
+  coord_flip() + 
+  ggtitle("Full Dataset - Fare (Distributions, Survived vs Died)")
+```
+### **Cabin**
+The cabine number. There were lots of NA's
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+sum(titanic_full$Cabin=="")
+```
+It is possible to see certain trends in passengers whose Cabin' data is missing.
+
+### **Embarked**
+The port that the passenger embarked from (C = Cherbourg, Q = Queenstown, S = Southampton).
+We can see that almost 70% departed from Southampton.
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+g11 <- titanic_full %>%
+  filter(!is.na(Embarked)) %>%
+ggplot(aes(x = factor(Embarked))) + 
+  geom_bar(fill = "deepskyblue4") + 
+  scale_y_continuous(breaks = seq(0, 1000, 100)) + 
+  labs(x = "Embarked", y = "Count") + 
+  ggtitle("Full Dataset - Embarked") +
+  theme(plot.title = element_text(size = 10, face = "bold"))
+
+
+g12 <- train_titanic %>%
+  filter(!is.na(Embarked)) %>%
+ggplot(aes(x = factor(Embarked), fill = factor(Survived))) + 
+  geom_bar(fill = "darkgreen") + 
+  scale_y_continuous(breaks = seq(0, 500, 50)) + 
+  scale_fill_discrete(name = "Survived") +
+  labs(x = "Embarked", y = "Count") + 
+  ggtitle("Train Dataset - Embarked (Proportion Survived)") 
+
+g11
+g12
+```

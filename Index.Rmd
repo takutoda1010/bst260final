@@ -1,4 +1,8 @@
 ---
-title: "Home"
+title: "BST260 Final Project"
 ---
-Hello, Website!
+# Dec 14, 2022
+## BST260
+### Final Project
+
+This is my final project!

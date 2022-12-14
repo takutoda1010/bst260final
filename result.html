@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Takuto Yoshida" />
+
+<meta name="date" content="2022-12-14" />
+
+<title>result</title>
+
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Predictions of Titanic Survivors</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="Index.html">Home</a>
+</li>
+<li>
+  <a href="intro.html">
+    <span class="fa fa-user"></span>
+     
+    Introduction
+  </a>
+</li>
+<li>
+  <a href="result.html">
+    <span class="fa fa-file-pdf-o"></span>
+     
+    Result &amp; Conclusion
+  </a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">result</h1>
+<h4 class="author">Takuto Yoshida</h4>
+<h4 class="date">2022-12-14</h4>
+
+</div>
+
+
+<div id="results" class="section level1">
+<h1><strong>Results</strong></h1>
+<div id="importing-combining-data-overview" class="section level3">
+<h3><strong>Importing, Combining, Data Overview</strong></h3>
+<p>Combined into one full data set. Referring to the data set, it can be
+seen that there are missing values in <strong>Age</strong> and
+<strong>Fare</strong>,and <strong>Survived</strong> have the missing
+value. I define the function <em>missing_var</em>, which I can use to
+get an overview of what proportion of each variable is missing, and
+re-use it later if I need to.</p>
+<pre><code>## &#39;data.frame&#39;:    1309 obs. of  13 variables:
+##  $ PassengerId: int  892 893 894 895 896 897 898 899 900 901 ...
+##  $ Pclass     : int  3 3 2 3 3 3 3 2 3 3 ...
+##  $ Name       : chr  &quot;Kelly, Mr. James&quot; &quot;Wilkes, Mrs. James (Ellen Needs)&quot; &quot;Myles, Mr. Thomas Francis&quot; &quot;Wirz, Mr. Albert&quot; ...
+##  $ Sex        : chr  &quot;male&quot; &quot;female&quot; &quot;male&quot; &quot;male&quot; ...
+##  $ Age        : num  34.5 47 62 27 22 14 30 26 18 21 ...
+##  $ SibSp      : int  0 1 0 0 1 0 0 1 0 2 ...
+##  $ Parch      : int  0 0 0 0 1 0 0 1 0 0 ...
+##  $ Ticket     : chr  &quot;330911&quot; &quot;363272&quot; &quot;240276&quot; &quot;315154&quot; ...
+##  $ Fare       : num  7.83 7 9.69 8.66 12.29 ...
+##  $ Cabin      : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  $ Embarked   : chr  &quot;Q&quot; &quot;S&quot; &quot;Q&quot; &quot;S&quot; ...
+##  $ Test_Data  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ Survived   : int  NA NA NA NA NA NA NA NA NA NA ...</code></pre>
+<pre><code>##   PassengerId       Pclass          Name               Sex           
+##  Min.   :   1   Min.   :1.000   Length:1309        Length:1309       
+##  1st Qu.: 328   1st Qu.:2.000   Class :character   Class :character  
+##  Median : 655   Median :3.000   Mode  :character   Mode  :character  
+##  Mean   : 655   Mean   :2.295                                        
+##  3rd Qu.: 982   3rd Qu.:3.000                                        
+##  Max.   :1309   Max.   :3.000                                        
+##                                                                      
+##       Age            SibSp            Parch          Ticket         
+##  Min.   : 0.17   Min.   :0.0000   Min.   :0.000   Length:1309       
+##  1st Qu.:21.00   1st Qu.:0.0000   1st Qu.:0.000   Class :character  
+##  Median :28.00   Median :0.0000   Median :0.000   Mode  :character  
+##  Mean   :29.88   Mean   :0.4989   Mean   :0.385                     
+##  3rd Qu.:39.00   3rd Qu.:1.0000   3rd Qu.:0.000                     
+##  Max.   :80.00   Max.   :8.0000   Max.   :9.000                     
+##  NA&#39;s   :263                                                        
+##       Fare            Cabin             Embarked           Test_Data     
+##  Min.   :  0.000   Length:1309        Length:1309        Min.   :0.0000  
+##  1st Qu.:  7.896   Class :character   Class :character   1st Qu.:0.0000  
+##  Median : 14.454   Mode  :character   Mode  :character   Median :1.0000  
+##  Mean   : 33.295                                         Mean   :0.6807  
+##  3rd Qu.: 31.275                                         3rd Qu.:1.0000  
+##  Max.   :512.329                                         Max.   :1.0000  
+##  NA&#39;s   :1                                                               
+##     Survived     
+##  Min.   :0.0000  
+##  1st Qu.:0.0000  
+##  Median :0.0000  
+##  Mean   :0.3838  
+##  3rd Qu.:1.0000  
+##  Max.   :1.0000  
+##  NA&#39;s   :418</code></pre>
+</div>
+<div id="exploring-existing-variables" class="section level2">
+<h2><strong>Exploring existing variables</strong></h2>
+<div id="passengerid" class="section level3">
+<h3><strong>PassengerId</strong></h3>
+<p>This is the passenger’s ID. The number 1 - 891 is train data and 892
+- 1309 is test data.</p>
+<pre><code>##  int [1:1309] 892 893 894 895 896 897 898 899 900 901 ...</code></pre>
+</div>
+<div id="pclass" class="section level3">
+<h3><strong>Pclass</strong></h3>
+<p>Many tickets were Pclass=3, and Pclass=3 passengers were found to
+have lower survivability.</p>
+<pre><code>## 
+##         1         2         3 
+## 0.2467532 0.2116119 0.5416348</code></pre>
+<pre><code>##    
+##             0         1
+##   1 0.3703704 0.6296296
+##   2 0.5271739 0.4728261
+##   3 0.7576375 0.2423625</code></pre>
+<p><img src="result_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="name" class="section level3">
+<h3><strong>Name</strong></h3>
+<p>There were two people with the same name. The data shows that they
+were different people.</p>
+<pre><code>## [1] TRUE</code></pre>
+<pre><code>##   PassengerId Survived                 Name  Age Ticket
+## 1         892       NA     Kelly, Mr. James 34.5 330911
+## 2         898       NA Connolly, Miss. Kate 30.0 330972
+## 3         290        1 Connolly, Miss. Kate 22.0 370373
+## 4         697        0     Kelly, Mr. James 44.0 363592</code></pre>
+</div>
+<div id="sex" class="section level3">
+<h3><strong>Sex</strong></h3>
+<pre><code>## 
+##    female      male 
+## 0.3559969 0.6440031</code></pre>
+</div>
+<div id="age" class="section level3">
+<h3><strong>Age</strong></h3>
+<p>Younger age passengers show higher survival rates. Age has quite a
+problem with missing value. I will deal with this problem later.
+<img src="result_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="result_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>
+<div id="sibsp" class="section level3">
+<h3><strong>SibSp</strong></h3>
+<p>The number of siblings/spouse aboard the titanic. The mortality rate
+is higher for those with fewer siblings and spouses.</p>
+<pre><code>##    
+##       0   1
+##   0 398 210
+##   1  97 112
+##   2  15  13
+##   3  12   4
+##   4  15   3
+##   5   5   0
+##   8   7   0</code></pre>
+<pre><code>##    
+##             0         1
+##   0 0.6546053 0.3453947
+##   1 0.4641148 0.5358852
+##   2 0.5357143 0.4642857
+##   3 0.7500000 0.2500000
+##   4 0.8333333 0.1666667
+##   5 1.0000000 0.0000000
+##   8 1.0000000 0.0000000</code></pre>
+<p><img src="result_files/figure-html/unnamed-chunk-11-1.png" width="672" />
+### <strong>Parch</strong> The number of parents/children aboard the
+titanic. The mortality rate is higher when the number of parents and
+children is smaller. Base on the visualization of SibSp and Parch, the
+family size seems to be related to the survive. Therefore, I create the
+new variable to indicate the family size.</p>
+<pre><code>##    
+##       0   1
+##   0 445 233
+##   1  53  65
+##   2  40  40
+##   3   2   3
+##   4   4   0
+##   5   4   1
+##   6   1   0
+##   9   0   0</code></pre>
+<pre><code>##    
+##               0           1
+##   0 0.499438833 0.261503928
+##   1 0.059483726 0.072951740
+##   2 0.044893378 0.044893378
+##   3 0.002244669 0.003367003
+##   4 0.004489338 0.000000000
+##   5 0.004489338 0.001122334
+##   6 0.001122334 0.000000000
+##   9 0.000000000 0.000000000</code></pre>
+<p><img src="result_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>Passengers with more family members are expected to have higher
+survival rates, so a new variable was created to indicate the number of
+family members.</p>
+<pre><code>##     
+##        0   1
+##   1  374 163
+##   2   72  89
+##   3   43  59
+##   4    8  21
+##   5   12   3
+##   6   19   3
+##   7    8   4
+##   8    6   0
+##   11   7   0</code></pre>
+<pre><code>##     
+##                0           1
+##   1  0.419753086 0.182940516
+##   2  0.080808081 0.099887767
+##   3  0.048260382 0.066217733
+##   4  0.008978676 0.023569024
+##   5  0.013468013 0.003367003
+##   6  0.021324355 0.003367003
+##   7  0.008978676 0.004489338
+##   8  0.006734007 0.000000000
+##   11 0.007856341 0.000000000</code></pre>
+<p><img src="result_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+<div id="ticket" class="section level3">
+<h3><strong>Ticket</strong></h3>
+<p>This is the Ticket number. Several passengers are fond to have the
+same ticket number, This could mean that family members or others who
+rode together may have shared tickets.</p>
+<pre><code>## [1] 929</code></pre>
+<pre><code>## # A tibble: 929 × 2
+## # Groups:   Ticket [929]
+##    Ticket           n
+##    &lt;chr&gt;        &lt;int&gt;
+##  1 CA. 2343        11
+##  2 1601             8
+##  3 CA 2144          8
+##  4 3101295          7
+##  5 347077           7
+##  6 347082           7
+##  7 PC 17608         7
+##  8 S.O.C. 14879     7
+##  9 113781           6
+## 10 19950            6
+## # … with 919 more rows</code></pre>
+<pre><code>## # A tibble: 930 × 3
+## # Groups:   Ticket, Fare [930]
+##    Ticket        Fare     n
+##    &lt;chr&gt;        &lt;dbl&gt; &lt;int&gt;
+##  1 CA. 2343      69.6    11
+##  2 1601          56.5     8
+##  3 CA 2144       46.9     8
+##  4 3101295       39.7     7
+##  5 347077        31.4     7
+##  6 347082        31.3     7
+##  7 PC 17608     262.      7
+##  8 S.O.C. 14879  73.5     7
+##  9 113781       152.      6
+## 10 19950        263       6
+## # … with 920 more rows</code></pre>
+<p>People with the same ticket have the same fare except the number
+7534.</p>
+<pre><code>##   PassengerId Pclass                          Name  Sex Age SibSp Parch Ticket
+## 1         139      3           Osen, Mr. Olaf Elon male  16     0     0   7534
+## 2         877      3 Gustafsson, Mr. Alfred Ossian male  20     0     0   7534
+##     Fare Cabin Embarked Test_Data Survived Fsize
+## 1 9.2167              S         1        0     1
+## 2 9.8458              S         1        0     1</code></pre>
+</div>
+<div id="fare" class="section level3">
+<h3><strong>Fare</strong></h3>
+<p>This is the passenger’s fare. This shows a very right-skewed data and
+there is one outliers at &gt;500.
+<img src="result_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+After excluding outliers, the relationship between fares and survival
+rates was examined and found that those who purchased more expensive
+tickets had higher survival rates.
+<img src="result_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+### <strong>Cabin</strong> The cabine number. There were lots of
+NA’s</p>
+<pre><code>## [1] 1014</code></pre>
+<p>It is possible to see certain trends in passengers whose Cabin’ data
+is missing.</p>
+</div>
+<div id="embarked" class="section level3">
+<h3><strong>Embarked</strong></h3>
+<p>The port that the passenger embarked from (C = Cherbourg, Q =
+Queenstown, S = Southampton). We can see that almost 70% departed from
+Southampton.</p>
+<p><img src="result_files/figure-html/unnamed-chunk-21-1.png" width="672" /><img src="result_files/figure-html/unnamed-chunk-21-2.png" width="672" /></p>
+</div>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
