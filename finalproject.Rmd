@@ -1,0 +1,537 @@
+---
+title: "bst260 Final version"
+author: "Takuto Yoshida"
+date: "2022-12-11"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#**Final project**
+## **Introduction**
+Titanic was the name of a British luxury liner with a gross tonnage of 46,328 tons. On her maiden voyage to New York in 1912, she collided with an iceberg off the coast of Newfoundland on April 14 and sank. It was the world's largest maritime accident, claiming the lives of 1514 of the 22008 people on board. This was the first time that the internationally established distress signal "SOS" was sent out. Later, this maritime accident was featured in Hollywood, where Leonardo DiCaprio and Kate Winslet gave glamorous and tragic performances. The film won 11 Academy Awards in 1998, including Best Picture, and its total U.S. box office gross of $659,363,944 ranks seventh on the U.S. all-time list. Predicting the Titanic's survivors is the gateway problem for Kaggle, the world's largest platform for data scientists. Using this data set, I created multiple models and evaluated their performance to determine which model performed the best.
+
+### **Objective**
+What I have done in this project is the following.
+* To make the data set tidy so that it can be analyzed.
+* Evaluate each variable and create variables to be used for forecasting.
+* Create multiple models and select the model with the best predictive performance.
+
+### **Methods**
+For each variable, I evaluated its association with mortality to determine if it was useful for prediction. I created variables that I considered useful for forecasting. If there were missing values, I substituted values in multiple ways to ensure that there were no missing values in the data. Finally, multiple machine learning models were created using these variables, and their predictive ability was evaluated.
+
+## **Results**
+### **Importing, Combining, Data Overview**
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Make the following libraries available
+library('readr') 
+library('dplyr') 
+library('ggplot2') 
+library('gridExtra')
+library('tictoc') 
+library('caret') 
+library('mice')
+library('randomForest')
+library('glmnet')
+library('kernlab')
+library('C50')
+library('pROC')
+library('Matrix')
+library('tidyverse')
+library('stringr')
+library('ranger')
+library('e1071')
+library('corrplot')
+library('scales')
+library('ggthemes')
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Importing the dataset
+theme_set(theme_light())
+setwd("/Users/yoshidatakuto/Dropbox/HSPH/MPH-CLE/BST260/titanic (1)")
+train_titanic <- read.csv("test.csv", stringsAsFactors = F) %>% mutate(Test_Data = 0)
+test_titanic <- read.csv("train.csv", stringsAsFactors = F) %>% mutate(Test_Data = 1)
+titanic_full <- bind_rows(train_titanic, test_titanic) 
+```
+
+Combined into one full data set. Referring to the data set, it can be seen that there are missing values in __Age__ and __Fare__,and __Survived__ have the missing value. I define the function *missing_var*, which I can use to get an overview of what proportion of each variable is missing, and re-use it later if I need to. 
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# full model
+titanic_full <- bind_rows(train_titanic, test_titanic)
+str(titanic_full)
+summary(titanic_full)　
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+missing_vars <- function(x) {
+  var <- 0
+  missing <- 0
+  missing_prop <- 0
+  for (i in 1:length(names(x))) {
+    var[i] <- names(x)[i]
+    missing[i] <- sum(is.na(x[, i]))
+    missing_prop[i] <- missing[i] / nrow(x)
+  }
+  (missing_data <- data.frame(var = var, missing = missing, missing_prop = missing_prop) %>% 
+      arrange(desc(missing_prop)))
+}
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+missing_vars(titanic_full)
+```
+
+## **Exploring existing variables**
+
+### **PassengerId**
+This is the passenger's ID. The number 1 - 891 is train data and 892 - 1309 is test data.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+str(titanic_full$PassengerId)
+```
+
+### **Pclass**
+Many tickets were Pclass=3, and Pclass=3 passengers were found to have lower survivability.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+theme_set(theme_light())
+
+prop.table(table(titanic_full$Pclass))
+prop.table(table(titanic_full$Pclass, titanic_full$Survived), 1)
+
+ggplot(titanic_full[1:891,],aes(x = Pclass,fill= factor(Survived))) +
+  geom_bar(stat='count',position='dodge') 
+```
+
+### **Name**
+There were two people with the same name. The data shows that they were different people.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+length(unique(titanic_full$Name)) < nrow(titanic_full)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  filter(Name == "Connolly, Miss. Kate" | Name == "Kelly, Mr. James") %>%
+  select(PassengerId, Survived, Name, Age, Ticket)
+```
+### **Sex**
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+prop.table(table(titanic_full$Sex))
+```
+
+### **Age**
+Younger age passengers show higher survival rates. Age has quite a problem with missing value. I will deal with this problem later.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Visualization of Age and survivability using linear regression and scatter plots
+ggplot(titanic_full[1:891,],aes(x=Age, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge') 
+```
+
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full, aes(x=titanic_full$Age, y=titanic_full$Survived)) +
+  geom_point() +
+  geom_smooth(method = lm, se=TRUE)
+```
+
+
+### **SibSp**
+The number of siblings/spouse aboard the titanic. The mortality rate is higher for those with fewer siblings and spouses.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+table(titanic_full$SibSp, titanic_full$Survived)
+prop.table(table(titanic_full$SibSp, titanic_full$Survived), 1)
+ggplot(titanic_full[1:891,],aes(x=SibSp, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge')
+```
+### **Parch**
+The number of parents/children aboard the titanic. The mortality rate is higher when the number of parents and children is smaller. Base on the visualization of SibSp and Parch, the family size seems to be related to the survive. Therefore, I create the new variable to indicate the family size.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+table(titanic_full$Parch, titanic_full$Survived)
+prop.table(table(titanic_full$Parch, titanic_full$Survived))
+ggplot(titanic_full[1:891,],aes(x=Parch, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge')
+```
+
+Passengers with more family members are expected to have higher survival rates, so a new variable was created to indicate the number of family members.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# The number of family member 
+titanic_full$Fsize <- titanic_full$SibSp + titanic_full$Parch +1
+table(titanic_full$Fsize, titanic_full$Survived)
+prop.table(table(titanic_full$Fsize, titanic_full$Survived))
+ggplot(titanic_full[1:891,],aes(x=Fsize, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge')
+```
+
+### **Ticket**
+This is the Ticket number. Several passengers are fond to have the same ticket number, This could mean that family members or others who rode together may have shared tickets.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+length(unique(titanic_full$Ticket))
+```
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  group_by(Ticket) %>%
+  count() %>%
+  arrange(desc(n))
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  group_by(Ticket, Fare) %>%
+  count() %>%
+  arrange(desc(n))
+```
+People with the same ticket have the same fare except the number 7534. 
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full %>%
+  filter(Ticket == '7534')
+```
+
+
+### **Fare**
+This is the passenger's fare. This shows a very right-skewed data and there is one outliers at >500.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full, aes(x = 1, y = Fare)) + 
+  geom_boxplot() + 
+  theme(axis.ticks.y = element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.title.y=element_blank()) + 
+  scale_y_continuous(breaks = seq(0, 600, 50)) + 
+  coord_flip() + 
+  ggtitle("Full Dataset - Fare")
+```
+After excluding outliers, the relationship between fares and survival rates was examined and found that those who purchased more expensive tickets had higher survival rates.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full, aes(x = 1, y = Fare)) + 
+  geom_boxplot() + 
+  theme(axis.ticks.y = element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.title.y=element_blank()) + 
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 50)) + 
+  facet_grid(Survived ~ ., labeller = label_both) + 
+  coord_flip() + 
+  ggtitle("Full Dataset - Fare (Distributions, Survived vs Died)")
+```
+### **Cabin**
+The cabine number. There were lots of NA's
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+sum(titanic_full$Cabin=="")
+```
+It is possible to see certain trends in passengers whose Cabin' data is missing.
+
+### **Embarked**
+The port that the passenger embarked from (C = Cherbourg, Q = Queenstown, S = Southampton).
+We can see that almost 70% departed from Southampton.
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+g11 <- titanic_full %>%
+  filter(!is.na(Embarked)) %>%
+ggplot(aes(x = factor(Embarked))) + 
+  geom_bar(fill = "deepskyblue4") + 
+  scale_y_continuous(breaks = seq(0, 1000, 100)) + 
+  labs(x = "Embarked", y = "Count") + 
+  ggtitle("Full Dataset - Embarked") +
+  theme(plot.title = element_text(size = 10, face = "bold"))
+
+
+g12 <- train_titanic %>%
+  filter(!is.na(Embarked)) %>%
+ggplot(aes(x = factor(Embarked), fill = factor(Survived))) + 
+  geom_bar(fill = "darkgreen") + 
+  scale_y_continuous(breaks = seq(0, 500, 50)) + 
+  scale_fill_discrete(name = "Survived") +
+  labs(x = "Embarked", y = "Count") + 
+  ggtitle("Train Dataset - Embarked (Proportion Survived)") 
+
+g11
+g12
+```
+
+# **3. Feature Engineering $ Missing Value Imputation**
+## **3.1 Feature Engineering**
+### **3.1.1 Title**
+From the evaluation of the variables so far, I have found that survival rates are higher for economically well-off individuals and for women. Thus, it is possible that survival rates can be predicted from name titles. I subtracted the Title from *Name* by using regular expression.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Title <- gsub('(.*, )|(\\..*)', '', titanic_full$Name)
+titanic_full$Surname <- sapply(titanic_full$Name, function(x) strsplit(x, split = '[,.]')[[1]][1])
+table(titanic_full$Title, titanic_full$Survived)
+table(titanic_full$Sex, titanic_full$Title)
+prop.table(table(titanic_full$Title, titanic_full$Survived), 1)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full[1:891, ], aes(x = Title, fill = factor(Survived))) + 
+  geom_bar(stat='count', position='dodge') 
+```
+There are several few titles. We have summarized and categorized them into groups of six titles.
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+officer <- c('Capt', 'Col', 'Don', 'Dr', 'Major', 'Rev')
+royalty <- c('Dona', 'Lady', 'the Countess', 'Sir', 'Jonkheer')
+titanic_full$Title[titanic_full$Title == 'Mlle'] <- 'Miss'
+titanic_full$Title[titanic_full$Title == 'Ms'] <- 'Miss'
+titanic_full$Title[titanic_full$Title == 'Mme'] <- 'Mrs'
+titanic_full$Title[titanic_full$Title %in% royalty] <- 'Royalty'
+titanic_full$Title[titanic_full$Title %in% officer] <- 'Officer'
+titanic_full$Title = as.factor(titanic_full$Title)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+ggplot(titanic_full[1:891,],aes(x=Title, fill=factor(Survived))) +
+  geom_bar(stat='count', position='dodge') 
+```
+It can be seen that the mortality rate is very high for those with the title "Mr.".
+
+### **3.1.2 Cabin data**
+Many part of cabin data was missing. Since assigning missing values would place a very strong presumption, I made it a binary variable with and without data.
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Cabin_dat <- ifelse(!(titanic_full$Cabin==""), 1, 0)
+prop.table(table(titanic_full$Cabin_dat))
+```
+
+### **3.1.3 Fare (per person)**
+We created the per capita fare cost as a variable because it is possible that more affluent people purchase more expensive tickets and have higher survival rates.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+fare_pp <- titanic_full %>%
+  group_by(Ticket, Fare) %>%
+  summarise(Group_size_FE = n()) %>%
+  mutate(Fare_pp_FE = Fare / Group_size_FE)
+```
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full <- left_join(titanic_full, fare_pp, by=c("Ticket", "Fare"))
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+g13 <- ggplot(titanic_full, aes(x = Group_size_FE, y = Fare)) + 
+  geom_jitter(alpha = 0.2) + 
+  geom_smooth(method = "lm", se = F) + 
+  scale_y_continuous(limits = c(0, 300)) + 
+  labs(x = "Group Size", y = "Fare") + 
+  theme(legend.position = "none")
+
+g14 <- ggplot(titanic_full, aes(x = Group_size_FE, y = Fare, col = factor(Pclass))) + 
+  geom_jitter(alpha = 0.2) + 
+  geom_smooth(method = "lm", se = F) + 
+  facet_grid(Pclass ~ ., labeller = label_both) + 
+  scale_y_continuous(limits = c(0, 300)) + 
+  labs(x = "Group Size", y = "Fare") + 
+  theme(legend.position = "none")
+
+grid.arrange(g13, g14, ncol = 2)
+```
+There are correlation between Group size and Pclass.
+### **3.1.4**
+Based on previous studies, it is possible that the larger the family size, the higher the survival rate. Thus, I created a family size variable.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Family_size_FE <- titanic_full$SibSp + titanic_full$Parch + 1
+
+titanic_full$Total_group_size_FE <- pmax(titanic_full$Family_size_FE, titanic_full$Group_size_FE)
+```
+
+
+## **3.2 Missing Value**
+From here, I have addressed the variables with missing values. I know that there were missing values in __Age__, and __Fare_pp_FE__. I also know that __Embarked__ has a blank entry.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full <- titanic_full %>%
+  select(-c(Name, Ticket, Cabin, Group_size_FE, Fare))
+
+missing_vars(titanic_full)
+```
+### **3.2.1 Fare**
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full[is.na(titanic_full$Fare_pp_FE), ]
+```
+There was only one missing value. Since there was one missing value, the median value was assigned instead of taking a special imputation method to save time.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Fare_pp_FE[is.na(titanic_full$Fare_pp_FE)] <- median(titanic_full$Fare_pp_FE, na.rm = T)
+```
+
+### **3.2.2 Embarked**
+I can see that there are two missing calues in the __Embarked__. Most passengers are classified as "S". However, they are classified as "C" because their ticket price is high and it is possible that the wealthier passengers are from "C".
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+which(titanic_full$Embarked == "")
+titanic_full[c(480, 1248), ]
+```
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$Embarked[c(480, 1248)] <- "C"
+table(titanic_full$Embarked)
+```
+
+### **3.2.3 Age**
+The missing calues for __Age__ have been found to be about 20% of the total. Therefore, it is reasonable to use the imputation method to deal with missing values. Here, the missing values were assigned by random forest.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+# Nominal factors
+titanic_full_nominal <- c('Survived', 'Sex', 'Embarked', 'Title', 'Cabin_dat')
+titanic_full[titanic_full_nominal]<-lapply(titanic_full[titanic_full_nominal], function(x){factor(x)})
+
+# Ordinal factors
+titanic_full$Pclass <- factor(titanic_full$Pclass,
+                              ordered = TRUE,
+                              levels = c(3,2,1),
+                              labels = c("Third", "Second", "First"))
+
+# Tidying
+titanic_full$Total_group_size_FE <- as.integer(titanic_full$Total_group_size_FE)
+titanic_full$Test_Data <- as.integer(titanic_full$Test_Data)
+titanic_full$Fare_pp_FE <- round(titanic_full$Fare_pp_FE, 2)
+
+glimpse(titanic_full)
+```
+I used 5-fold cross validation with different mtry values.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+age_train <- titanic_full %>%
+  filter(!is.na(Age))
+
+set.seed(2307)
+
+repeatedCV <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+
+rf_age_grid <- expand.grid(mtry = c(2, 3, 4))
+
+tic()
+rf_age <- train(x = age_train %>% select(c(Pclass, Sex, SibSp, Parch, Embarked, Title, Cabin_dat, Fare_pp_FE, Total_group_size_FE)),
+                     y = age_train$Age,
+                     method = "rf", 
+                     trControl = repeatedCV, 
+                     importance = TRUE, 
+                     tuneGrid = rf_age_grid)
+toc()
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_age
+```
+We can see that the RMSE is the smallest value when mtry = 2.Thus, we see that we are predicting with a random forest of mtry=2.　Looking at the impact on variable predictions, it is clear that the __Title__ has a significant impact.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+varImp(rf_age)
+```
+Using this prediction formula, the missing value of __Age__ is sbstituted. For those with missing age, we put the predicted value, and for those without missing age, we set the original value.' Master' and older than 13 years old were set to 13 years old.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+age_predictions <- predict(rf_age, titanic_full)
+
+# joining back onto data frame
+
+titanic_full <- as_tibble(cbind(titanic_full, age_predictions))
+
+titanic_full$Age_IMP <- ifelse(!is.na(titanic_full$Age), 
+                               titanic_full$Age, 
+                               titanic_full$age_predictions)
+
+titanic_full <- titanic_full %>%
+  select(-c(Age, SibSp, Parch, age_predictions))
+
+titanic_full$Age_IMP <- ifelse(titanic_full$Title == 'Master' & titanic_full$Age_IMP > 13,
+                               13, 
+                               titanic_full$Age_IMP) 
+```
+
+### 3.2.4. Child
+Since it is presumed that younger people have a higher survival rate, a variable was set up to define children as those under 15 years of age.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+titanic_full$IsChild_FE <- factor(ifelse(titanic_full$Age_IMP < 15, 1, 0))
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+glimpse(titanic_full)
+```
+
+# ** Building and Tuning the Final Model
+I have divided the full model again into test and training data. The training data is used to create a predictive model to predict the survival of the test data.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_test <- as_tibble(titanic_full) %>%
+  filter(Test_Data == 0)
+```
+
+## ** 4.1 Model1: All Variables**
+First, I created a predictive model with all variables. Create a training data set with only those variables selected that I believe will be useful.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_train_1 <- titanic_full %>%
+  filter(Test_Data == "1") %>%
+  select(c(Survived, Pclass, Sex, Embarked, Title, Cabin_dat, Fare_pp_FE, Total_group_size_FE, Age_IMP, IsChild_FE))
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+set.seed(2307)
+
+repeatedCV <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+
+rf_grid <- expand.grid(mtry = seq(from = 2, to = ncol(rf_train_1) - 1, by = 1))
+
+tic()
+rf_model_1 <- train(x = rf_train_1[ ,-1],
+                  y = rf_train_1$Survived,
+                  method = "rf", 
+                  trControl = repeatedCV, 
+                  importance = TRUE, 
+                  tuneGrid = rf_grid)
+toc()
+
+rf_model_1
+```
+We can see that Accuracy 0.8329977 is the highest value when mtry=3.　This model still shows that __Title__ is the most useful for prediction.
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+varImp(rf_model_1)
+```
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+paste("The maximum accuracy was", round(max(rf_model_1$results$Accuracy), 5))
+```
+
+## **Model 2: Removing the least useful variables:**
+Next, I created a prediction model without __Cabin_dat__ and __IsChild_FE__, which were considered not very useful for prediction in the previous analysis. I have created a predictive model with a random forest as well. We found that Accuracy was highest at mtry=2.
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+rf_train_2 <- titanic_full %>%
+  filter(Test_Data == 1) %>%
+  select(c(Survived, Pclass, Sex, Embarked, Title, Fare_pp_FE, Total_group_size_FE, Age_IMP))
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+set.seed(2307)
+
+repeatedCV <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+
+rf_grid <- expand.grid(mtry = seq(from = 2, to = ncol(rf_train_2) - 1, by = 1))
+
+tic()
+rf_model_2 <- train(x = rf_train_2[ ,-1],
+                    y = rf_train_2$Survived,
+                    method = "rf", 
+                    trControl = repeatedCV, 
+                    importance = TRUE, 
+                    tuneGrid = rf_grid)
+toc()
+
+
+rf_model_2
+```
+
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+varImp(rf_model_2)
+```
+
+```{r, appendix = TRUE, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+paste("The maximum accuracy was", round(max(rf_model_2$results$Accuracy), 5))
+```
+The results show that model2 has slightly higher Accuracy. I determined this to be the final model.
+
+## **Conclusion**
+I was able to obtain high Accuracy with the Random Forest model using __Title__, __Sex__, __Fare__pp__FE__, __Total_group_size_FE__, __Pclass__, __Age_IMP__, __Embarked__. If I have time in the future, I would like to create a support vector machine and XGboost model, which I plan to study in the spring semester or later.
+
+## **Appendix: All code for this report
+```{r ref.label=knitr::all_labels(appendix == TRUE ), echo=TRUE, eval=FALSE}
+
+```
+
+
+
